@@ -887,6 +887,20 @@ void MachineVerifier::verifyInlineAsm(const MachineInstr *MI) {
     if (!MO.isReg() || !MO.isImplicit())
       report("Expected implicit register after groups", &MO, OpNo);
   }
+
+  if (MI->getOpcode() == TargetOpcode::INLINEASM_BR)
+    for (const MachineOperand &MO : MI->operands())
+      if (MO.isBlockAddress())
+        for (const MachineBasicBlock &MBB : *MI->getParent()->getParent())
+          if (MBB.getBasicBlock() == MO.getBlockAddress()->getBasicBlock()) {
+            SmallPtrSet<const MachineBasicBlock *, 2> Preds;
+            for (const MachineBasicBlock *Pred : MBB.predecessors())
+              Preds.insert(Pred);
+            if (!Preds.count(MI->getParent()))
+              report("MMB target of INLINEASM_BR, but missing INLINEASM_BR's "
+                     "parent MBB from predecessor list",
+                     &MBB);
+          }
 }
 
 /// Check that types are consistent when two operands need to have the same
