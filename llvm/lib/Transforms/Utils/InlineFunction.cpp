@@ -1676,6 +1676,15 @@ llvm::InlineResult llvm::InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
       return InlineResult::failure("incompatible GC");
   }
 
+  if (LLVM_UNLIKELY(!Caller->hasStackProtectorFnAttr()))
+    if (CalledFunc->hasStackProtectorFnAttr())
+      return InlineResult::failure(
+          "stack protected callee but caller requested no stack protector");
+  if (LLVM_UNLIKELY(!CalledFunc->hasStackProtectorFnAttr()))
+    if (Caller->hasStackProtectorFnAttr())
+      return InlineResult::failure(
+          "stack protected caller but callee requested no stack protector");
+
   // Get the personality function from the callee if it contains a landing pad.
   Constant *CalledPersonality =
       CalledFunc->hasPersonalityFn()

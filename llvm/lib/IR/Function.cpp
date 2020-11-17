@@ -592,6 +592,12 @@ DenormalMode Function::getDenormalMode(const fltSemantics &FPType) const {
   return parseDenormalFPAttribute(Attr.getValueAsString());
 }
 
+bool Function::hasStackProtectorFnAttr() const {
+  return hasFnAttribute(Attribute::StackProtect) ||
+         hasFnAttribute(Attribute::StackProtectStrong) ||
+         hasFnAttribute(Attribute::StackProtectReq);
+}
+
 const std::string &Function::getGC() const {
   assert(hasGC() && "Function has no collector");
   return getContext().getGC(*this);

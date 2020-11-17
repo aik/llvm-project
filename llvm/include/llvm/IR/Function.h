@@ -373,6 +373,9 @@ public:
   bool hasGC() const {
     return getSubclassDataFromValue() & (1<<14);
   }
+
+  /// Returns true if the function has ssp, sspstrong, or sspreq fn attrs.
+  bool hasStackProtectorFnAttr() const;
   const std::string &getGC() const;
   void setGC(std::string Str);
   void clearGC();
