@@ -1535,8 +1535,10 @@ template <class ELFT> void Writer<ELFT>::sortSections() {
     // to know the relative order of the input sections. We use it for
     // sorting SHF_LINK_ORDER sections. See resolveShfLinkOrder().
     uint64_t i = 0;
-    for (InputSection *sec : getInputSections(os))
+    for (InputSection *sec : getInputSections(os)) {
       sec->outSecOff = i++;
+    //printf("+-+-+-+ %s %u: %lx\n", __func__, __LINE__, sec->outSecOff);
+    }
   }
 
   if (!script->hasSectionsCommand) {

@@ -655,6 +655,8 @@ GotSection::GotSection()
 
 void GotSection::addEntry(Symbol &sym) {
   sym.gotIndex = numEntries;
+
+    printf("+-+-+-+ %s %u: %lx %s %x\n", __func__, __LINE__, numEntries, sym.getName().str().c_str(), sym.globalDynIndex);
   ++numEntries;
 }
 
@@ -678,7 +680,9 @@ bool GotSection::addTlsIndex() {
 }
 
 uint64_t GotSection::getGlobalDynAddr(const Symbol &b) const {
-  return this->getVA() + b.globalDynIndex * config->wordsize;
+  uint64_t ret = this->getVA() + b.globalDynIndex * config->wordsize;
+    printf("+-+-+-+ %s %u: %s %lx %x\n", __func__, __LINE__, b.getName().data(), ret, b.globalDynIndex * config->wordsize);
+return ret;
 }
 
 uint64_t GotSection::getGlobalDynOffset(const Symbol &b) const {
@@ -3484,6 +3488,7 @@ void ARMExidxSyntheticSection::finalizeContents() {
   for (InputSection *isec : executableSections) {
     if (InputSection *d = findExidxSection(isec)) {
       d->outSecOff = offset;
+    printf("+-+-+-+ %s %u: %lx\n", __func__, __LINE__, d->outSecOff);
       d->parent = getParent();
       offset += d->getSize();
     } else {
