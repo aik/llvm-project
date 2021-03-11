@@ -980,9 +980,8 @@ void LinkerScript::assignOffsets(OutputSection *sec) {
     // It calculates and assigns the offsets for each section and also
     // updates the output section size.
     for (InputSection *sec : cast<InputSectionDescription>(base)->sections) {
-    	printf("+-+-+-+ %s %u: dot=%lx %s : %s\n",
-    	__func__, __LINE__, dot, sec->name.str().c_str(),
-	lld::toString(sec).c_str());
+    	printf("+-+-+-+ %s %u: dot=%lx %s\n",
+    	__func__, __LINE__, dot, sec->name.str().c_str());
       output(sec);
     }
   }
