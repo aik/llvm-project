@@ -191,11 +191,6 @@ uint64_t SectionBase::getOffset(uint64_t offset) const {
 
 uint64_t SectionBase::getVA(uint64_t offset) const {
   const OutputSection *out = getOutputSection();
-  //if (strcmp(name.str().c_str(), ".got") == 0)
-  //  printf("+-+-+-+ %s %u: %s %lx %lx offset=%lx getOff=%lx\n", __func__, __LINE__,
-//	name.str().c_str(),
-  //  	(unsigned long) out, out?out->addr:0, offset, getOffset(offset));
-//  	return (out ? out->addr : 0) + (offset);
   return (out ? out->addr : 0) + getOffset(offset);
 }
 
@@ -1233,10 +1228,7 @@ template <class ELFT> void InputSection::writeTo(uint8_t *buf) {
     return;
 
   if (auto *s = dyn_cast<SyntheticSection>(this)) {
-    printf("+-+-+-+ %s %u: %s %lx %lx %lx\n", __func__, __LINE__,
-	s->name.str().c_str(),
-    	(unsigned long) buf, outSecOff, s->getSize());
-    s->writeTo(buf);// + outSecOff);
+    s->writeTo(buf + outSecOff);
     return;
   }
 

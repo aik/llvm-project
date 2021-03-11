@@ -839,12 +839,6 @@ void LinkerScript::output(InputSection *s) {
   uint64_t pos = advance(s->getSize(), s->alignment);
   s->outSecOff = pos - s->getSize() - ctx->outSec->addr;
 
-  if (strcmp(s->name.str().c_str(), ".got") == 0 ||
-  	strcmp(s->name.str().c_str(), ".opd") == 0)
-    printf("+-+-+-+ %s %u: dot=%lx type=%x fl=%lx secoff=%lx pos=%lx size=%lx "
-    	"ctx=%lx alignment=%x before=%lx\n",
-    	__func__, __LINE__, dot, ctx->outSec->type, ctx->outSec->flags, s->outSecOff,
-    	pos, s->getSize(), ctx->outSec->addr, s->alignment, before);
   // Update output section size after adding each section. This is so that
   // SIZEOF works correctly in the case below:
   // .foo { *(.aaa) a = SIZEOF(.foo); *(.bbb) }
@@ -979,11 +973,8 @@ void LinkerScript::assignOffsets(OutputSection *sec) {
     // Handle a single input section description command.
     // It calculates and assigns the offsets for each section and also
     // updates the output section size.
-    for (InputSection *sec : cast<InputSectionDescription>(base)->sections) {
-    	printf("+-+-+-+ %s %u: dot=%lx %s\n",
-    	__func__, __LINE__, dot, sec->name.str().c_str());
+    for (InputSection *sec : cast<InputSectionDescription>(base)->sections)
       output(sec);
-    }
   }
 
   // Non-SHF_ALLOC sections do not affect the addresses of other OutputSections
