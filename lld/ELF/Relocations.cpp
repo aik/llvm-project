@@ -1788,8 +1788,15 @@ ThunkSection *ThunkCreator::getISDThunkSec(OutputSection *os,
     thunkSecOff = isec->outSecOff + isec->getSize();
     if (!target->inBranchRange(rel.type, src,
                                os->addr + thunkSecOff + rel.addend))
+    {
+      printf("+-+-+-+ %s %u: type=%d src=%lx osaddr=%lx off=%lx %lx [%s][%s] secsize=%ld secname=%s\n",
+			  __func__, __LINE__, rel.type,
+			  src, os->addr, isec->outSecOff, src - (os->addr + isec->outSecOff),
+			  rel.sym->nameData, rel.sym->file->getName().str().c_str(),
+			  isec->getSize(), isec->name.str().c_str());
       fatal("InputSection too large for range extension thunk " +
             isec->getObjMsg(src - (os->addr + isec->outSecOff)));
+    }
   }
   return addThunkSection(os, isd, thunkSecOff);
 }

@@ -72,8 +72,9 @@ public:
   // The file from which this symbol was created.
   InputFile *file;
 
-protected:
+public:
   const char *nameData;
+protected:
   mutable uint32_t nameSize;
 
 public:
