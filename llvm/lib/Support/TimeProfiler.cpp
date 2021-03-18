@@ -33,7 +33,7 @@ static std::mutex Mu;
 static std::vector<TimeTraceProfiler *>
     ThreadTimeTraceProfilerInstances; // GUARDED_BY(Mu)
 // Per Thread instance
-static LLVM_THREAD_LOCAL TimeTraceProfiler *TimeTraceProfilerInstance = nullptr;
+static LLVM_THREAD_LOCAL TimeTraceProfiler *TimeTraceProfilerInstance;// = NULL;//nullptr;
 
 TimeTraceProfiler *llvm::getTimeTraceProfilerInstance() {
   return TimeTraceProfilerInstance;
