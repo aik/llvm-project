@@ -30,12 +30,16 @@
 #include "llvm/LTO/LTOBackend.h"
 #include "llvm/LTO/SummaryBasedOptimizations.h"
 #include "llvm/Linker/IRMover.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Object/IRObjectFile.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/Regex.h"
 #include "llvm/Support/SHA1.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -700,6 +704,58 @@ handleNonPrevailingComdat(GlobalValue &GV,
     GO->setComdat(nullptr);
 }
 
+static const char *getTargetAsmSeparator(const Module &M) {
+  std::string Err;
+  const Triple TT(M.getTargetTriple());
+  const Target *T = TargetRegistry::lookupTarget(TT.str(), Err);
+  assert(T && T->hasMCAsmParser());
+
+  MCTargetOptions MCOptions;
+  MCRegisterInfo MRI;
+  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(MRI, TT.str(), MCOptions));
+  if (!MAI)
+    return "\\n";
+  return MAI->getSeparatorString();
+}
+
+static void
+handleModuleInlineAsm(Module &M, std::set<StringRef> &NonPrevailingAsmSymbols) {
+  ModuleSymbolTable::CollectAsmSymvers(M, [&](StringRef Name, StringRef Alias) {
+    if (!NonPrevailingAsmSymbols.count(Alias))
+      NonPrevailingAsmSymbols.erase(Name);
+  });
+
+  if (NonPrevailingAsmSymbols.empty())
+    return;
+
+  std::string Sep = getTargetAsmSeparator(M);
+  std::string PrefixPat = "(^|[[:blank:]]+)";
+  std::string SuffixPat = "($|" + Sep + ")";
+  std::string Symbols = "(" + llvm::join(NonPrevailingAsmSymbols, "|") + ")";
+  std::vector<std::string> Pats = {// Remove assignment directive.
+                                   "\\.(set|equ|equiv|eqv)[[:blank:]]+" +
+                                       Symbols + "[[:blank:]]*,[^" + Sep +
+                                       "]+" + SuffixPat,
+                                   // Remove labels.
+                                   Symbols + ":",
+                                   // Remove symbols.
+                                   "\\.(weak|global|globl)[[:blank:]]+" +
+                                       Symbols + "[[:blank:]]*" + SuffixPat};
+
+  std::string IA = M.getModuleInlineAsm();
+  for (bool Changed = true; Changed;) {
+    std::string PrevIA = IA;
+    for (auto &P : Pats) {
+      Regex RE(PrefixPat + P, Regex::Newline);
+      assert(RE.isValid());
+      IA = RE.sub("", IA);
+    }
+    Changed = IA != PrevIA;
+  }
+
+  M.setModuleInlineAsm(IA);
+}
+
 // Add a regular LTO object to the link.
 // The resulting module needs to be linked into the combined LTO module with
 // linkRegularLTO.
@@ -752,6 +808,7 @@ LTO::addRegularLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
   Skip();
 
   std::set<const Comdat *> NonPrevailingComdats;
+  std::set<StringRef> NonPrevailingAsmSymbol;
   for (const InputFile::Symbol &Sym : Syms) {
     assert(ResI != ResE);
     SymbolResolution Res = *ResI++;
@@ -798,7 +855,13 @@ LTO::addRegularLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
           GV->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::
                                  DefaultStorageClass);
       }
-    }
+    } else if (auto *AS = Msym.dyn_cast<ModuleSymbolTable::AsmSymbol *>()) {
+      // Collect non-prevailing symbols.
+      if (!Res.Prevailing)
+        NonPrevailingAsmSymbol.insert(AS->first);
+    } else
+      llvm_unreachable("unknown symbol type");
+
     // Common resolution: collect the maximum size/alignment over all commons.
     // We also record if we see an instance of a common as prevailing, so that
     // if none is prevailing we can ignore it later.
@@ -812,11 +875,15 @@ LTO::addRegularLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
         CommonRes.Align = max(*SymAlign, CommonRes.Align);
       CommonRes.Prevailing |= Res.Prevailing;
     }
-
   }
+
   if (!M.getComdatSymbolTable().empty())
     for (GlobalValue &GV : M.global_values())
       handleNonPrevailingComdat(GV, NonPrevailingComdats);
+
+  if (!NonPrevailingAsmSymbol.empty())
+    handleModuleInlineAsm(M, NonPrevailingAsmSymbol);
+
   assert(MsymI == MsymE);
   return std::move(Mod);
 }

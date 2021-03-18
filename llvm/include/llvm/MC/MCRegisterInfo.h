@@ -167,14 +167,18 @@ private:
   const uint16_t *RegEncodingTable;           // Pointer to array of register
                                               // encodings.
 
-  unsigned L2DwarfRegsSize;
-  unsigned EHL2DwarfRegsSize;
-  unsigned Dwarf2LRegsSize;
-  unsigned EHDwarf2LRegsSize;
-  const DwarfLLVMRegPair *L2DwarfRegs;        // LLVM to Dwarf regs mapping
-  const DwarfLLVMRegPair *EHL2DwarfRegs;      // LLVM to Dwarf regs mapping EH
-  const DwarfLLVMRegPair *Dwarf2LRegs;        // Dwarf to LLVM regs mapping
-  const DwarfLLVMRegPair *EHDwarf2LRegs;      // Dwarf to LLVM regs mapping EH
+  unsigned L2DwarfRegsSize = 0;
+  unsigned EHL2DwarfRegsSize = 0;
+  unsigned Dwarf2LRegsSize = 0;
+  unsigned EHDwarf2LRegsSize = 0;
+  // LLVM to Dwarf regs mapping
+  const DwarfLLVMRegPair *L2DwarfRegs = nullptr;
+  // LLVM to Dwarf regs mapping EH
+  const DwarfLLVMRegPair *EHL2DwarfRegs = nullptr;
+  // Dwarf to LLVM regs mapping
+  const DwarfLLVMRegPair *Dwarf2LRegs = nullptr;
+  // Dwarf to LLVM regs mapping EH
+  const DwarfLLVMRegPair *EHDwarf2LRegs = nullptr;
   DenseMap<MCRegister, int> L2SEHRegs;        // LLVM to SEH regs mapping
   DenseMap<MCRegister, int> L2CVRegs;         // LLVM to CV regs mapping
 
