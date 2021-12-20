@@ -362,9 +362,30 @@ public:
         return false;
     }
   }
-  bool isS16ImmX4() const { return Kind == Expression ||
-                                   (Kind == Immediate && isInt<16>(getImm()) &&
-                                    (getImm() & 3) == 0); }
+
+  bool isS16ImmX4() const {
+    switch (Kind) {
+    case Expression:
+      return true;
+    case Immediate:
+    case ContextImmediate:
+      return isInt<16>(getImmS16Context()) && (getImmS16Context() & 3) == 0;
+    default:
+      return false;
+    }
+  }
+
+  bool isS16ImmX16() const {
+    switch (Kind) {
+    case Expression:
+      return true;
+    case Immediate:
+    case ContextImmediate:
+      return isInt<16>(getImmS16Context()) && (getImmS16Context() & 15) == 0;
+    default:
+      return false;
+    }
+  }
 
   bool isHashImmX8() const {
     // The Hash Imm form is used for instructions that check or store a hash.
@@ -374,9 +395,6 @@ public:
             (getImm() & 7) == 0);
   }
 
-  bool isS16ImmX16() const { return Kind == Expression ||
-                                    (Kind == Immediate && isInt<16>(getImm()) &&
-                                     (getImm() & 15) == 0); }
   bool isS34ImmX16() const {
     return Kind == Expression ||
            (Kind == Immediate && isInt<34>(getImm()) && (getImm() & 15) == 0);
